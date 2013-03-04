@@ -1,0 +1,94 @@
+var async = require('async');
+var path = require('path');
+var Understudy = require('understudy').Understudy;
+var nconf = require('nconf');
+var spawn = require('child_process').spawn;
+var suspawn = require('suspawn');
+var merge = require('merge-recursive');
+var optimist = require('optimist');
+function Moduled(options) {
+  options = options || {};
+  Understudy.call(this, options.understudy);
+  this.integrations = {};
+  this.config = options.config || new nconf.Provider();
+  this.directories = merge.recursive({
+    rootdir: process.cwd()
+  }, this.config.get('directories') || {}, {
+    moduledir: './build/package',
+    packagedir: './build',
+    tmpdir: './tmp'
+  });
+  this.tasks = {};
+  options.builtins = options.builtins || [require('./integrations/run')];
+  options.builtins.forEach(this.integrate.bind(this))
+  return this;
+}
+exports.Moduled = Moduled;
+Moduled.prototype.integrate = function (spec) {
+  if (this.integrations[spec.name]) {
+    if (this.integrations[spec.name] === spec) {
+      return;
+    }
+    throw new Error('Integration ' + JSON.stringify(spec.name+'') + ' already exists');
+  }
+  var scaffold = this;
+  var dependencies = spec.dependencies;
+  if (dependencies) {
+    dependencies.forEach(this.integrate.bind(this));
+  }
+  var tasks = spec.tasks;
+  if (tasks) Object.keys(tasks).forEach(function (key) {
+    scaffold.tasks[key] = tasks[key];
+  });
+  var actions = spec.actions;
+  if (actions) Object.keys(actions).forEach(function (key) {
+    scaffold.before(key, spec[key]);
+  });
+}
+Moduled.prototype.task = function (name, args, options, cb) {
+  var scaffold = this;
+  options = options || {};
+  args = args || [];
+  var handler = scaffold.tasks[name];
+  if (handler) {
+    var argv = optimist.parse(args);
+    Object.keys(argv).forEach(function (key) {
+      if (key !== '_') scaffold.config.merge(['task',name,key].join(':'), argv[key]);
+    });
+    handler.call(scaffold, argv._, options, cb);
+  }
+  else {
+    cb(new Error('Unknown script: '+name));
+  }
+}
+//
+// Please use the run task instead unless you really know what you are doing
+//
+Moduled.prototype.run = function (cmd, argv, options, cb) {
+  var scaffold = this;
+  options = options || {};
+  async.waterfall([
+    scaffold.perform.bind(scaffold, 'run', cmd, argv, options),
+    function (cmd, argv, options, next) {
+      // copy to avoid taint
+      options = merge.recursive(
+        {
+          stdio:'inherit',
+          env:merge.recursive({}, process.env)
+        },
+        options
+      );
+      options.cwd = scaffold.directories.moduledir;
+      var child = options.uid || options.gid ? suspawn(cmd, argv, options) : spawn(cmd, argv, options);
+      child.on('exit', function (code, signal) {
+        var err;
+        if (code) {
+          err = new Error(cmd + ' exited with code ' + code)
+          err.code = code;
+          err.signal = signal;
+        }
+        typeof cb === 'function' && cb(err);
+      })
+    }
+  ], cb);
+}
