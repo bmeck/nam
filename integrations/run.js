@@ -32,7 +32,6 @@ exports.tasks = {
         break;
       default:
         addStringToEnv('PATH', toAddPath);
-        console.log(env)
         addStringToEnv('LD_LIBRARY_PATH', toAddLibPath);
         addStringToEnv('LIBRARY_PATH', toAddLibPath);
         // AIX
