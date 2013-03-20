@@ -9,7 +9,7 @@ exports.dependencies = [
 exports.tasks = {
   grunt: function (args, options, cb) {
     var scaffold = this;
-    scaffold.run('npm', ['install'], options, function (err) {
+    scaffold.task('run', ['npm','install'], options, function (err) {
       if (err) {
         typeof cb === 'function' && cb(err);
         return;

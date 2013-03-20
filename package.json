@@ -1,0 +1,10 @@
+{
+   "name": "nam",
+   "version": "0.0.0",
+   "repository": {
+      "type": "git",
+      "url": "git@github.com:bmeck/nam"
+   },
+   "main": "lib/nam.js",
+   "license": "MIT"
+}

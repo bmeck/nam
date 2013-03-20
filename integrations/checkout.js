@@ -79,6 +79,10 @@ function download(cb) {
     return;
   }
   var config = scaffold.config.get('task:checkout:repository');
+  if (!config) {
+    cb(new Error('Cannot checkout unknown repository'));
+    return;
+  }
   var repository = merge.recursive({}, config);
   repository.stream = config.stream;
   repository.destination = config.type !== 'tar-stream' ? scaffold.directories.moduledir : scaffold.directories.packagedir;

@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 //
-// moduled $OPTIONS < $CMD[] | moduled $OPTIONS $CMD
+// NodeApplicationManager $OPTIONS < $CMD[] | NodeApplicationManager $OPTIONS $CMD
 // $OPTIONS
 // --cwd|-C path
 // --integrate|-i [security|npm|...]
@@ -9,14 +9,14 @@
 // $CMD
 //   task[checkout|npm|grunt|run] $ARGS
 //
-// run moduled in the rootdir you want
+// run NodeApplicationManager in the rootdir you want
 //
 
 var async = require('async');
 var path = require('path');
 
-var Moduled = require('../moduled').Moduled;
-var scaffold = new Moduled();
+var NodeApplicationManager = require('../').NodeApplicationManager;
+var scaffold = new NodeApplicationManager();
 
 scaffold.config = require('nconf').argv().env();
 scaffold.config.file(scaffold.config.get('config') || scaffold.config.get('c') || 'config.json');
@@ -41,14 +41,13 @@ function done(err) {
    }
 }
 
-var tasks = [];
 var args = scaffold.config.get('_').map(String);
 if (!args.length) {
    if (!process.stdin.isTTY) {
       var buffs = [];
       process.stdin.on('end', function () {
-         tasks = JSON.parse(buffs.join(''));
-         runTasks();
+         var tasks = JSON.parse(buffs.join(''));
+         runTasks(tasks);
       });
       process.stdin.on('data', buffs.push.bind(buffs));
       process.stdin.resume();
@@ -62,11 +61,12 @@ else {
       console.error('Cannot accept both CLI task and stdin tasks');
       process.exit(1);
    }
-   tasks.push([args.shift(), args, null]);
-   runTasks();
+   runTasks([
+      [args.shift(), args, null]
+   ]);
 }
 
-function runTasks() {
+function runTasks(tasks) {
    async.forEachSeries(tasks, function (taskDefinition, next) {
       var cmd = taskDefinition[0];
       var args = taskDefinition[1] || [];
