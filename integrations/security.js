@@ -35,8 +35,8 @@ exports.actions = {
       next(null, scaffold, options);
       return;
     }
-    var uid = options.config.get('uid') || process.getuid();
-    var gid = options.config.get('gid') || process.getgid();
+    var uid = options.config.get('user') || process.getuid();
+    var gid = options.config.get('group') || process.getgid();
     uidNumber(uid, gid, function (err, uid, gid) {
       if (err) {
         next(err);
@@ -57,8 +57,8 @@ exports.actions = {
       return;
     }
     var scaffold = this;
-    var uid = options.config.get('uid');
-    var gid = options.config.get('gid');
+    var uid = options.config.get('user');
+    var gid = options.config.get('group');
     function setids(err, uid, gid) {
       if (err) {
         next(err);

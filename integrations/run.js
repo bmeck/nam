@@ -6,7 +6,6 @@ var path = require('path');
 exports.name = 'run';
 exports.tasks = {
   run: function (args, options, cb) {
-    console.log(arguments)
     var scaffold = this;
     var cmd = args.shift();
     var env = options.env || {};

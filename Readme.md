@@ -9,7 +9,8 @@
    
 ## CONFIG
 
-TODO
+--userconfig
+--globalconfig
 
 ## ENV SCAFFOLDING
 

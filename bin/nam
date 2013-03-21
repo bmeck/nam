@@ -18,8 +18,23 @@ var path = require('path');
 var NodeApplicationManager = require('../').NodeApplicationManager;
 var scaffold = new NodeApplicationManager();
 
-scaffold.config = require('nconf').argv().env();
-scaffold.config.file(scaffold.config.get('config') || scaffold.config.get('c') || 'config.json');
+scaffold.config = require('nconf').use('memory').argv().defaults({
+   userconfig: path.join(process.env.HOME, '.namconf'),
+   globalconfig: path.join(process.config.variables.node_prefix, '/etc/namconf'),
+   task: {
+      run: {
+         user: 'nobody'
+      }
+   }
+});
+Object.keys(process.env).forEach(function (key) {
+   var conf_pattern = /^nam_config_/;
+   if (conf_pattern.test(key)) {
+      scaffold.config.set(key.replace(conf_pattern, '').replace(/[^0-9A-Za-z]/,':'), process.env[key]);
+   }
+});
+scaffold.config.add('userconfig', {type: 'file', file: scaffold.config.get('userconfig')});
+scaffold.config.add('globalconfig', {type: 'file', file: scaffold.config.get('globalconfig')});
 
 var chdir = scaffold.config.get('cwd') || scaffold.config.get('C');
 if (scaffold.config.get('cwd')) {
