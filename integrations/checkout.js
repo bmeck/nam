@@ -49,21 +49,21 @@ exports.tasks = {
       else if (proto === 'directory') {
         repo.directory = path.resolve(scaffold.directories.rootdir, path.join(parts.host, parts.path));
       }
-      scaffold.config.set('task:checkout:repository', repo);
+      options.config.set('repository', repo);
     }
     async.waterfall([
-      mkdirs.bind(scaffold),
-      download.bind(scaffold),
-      prepare.bind(scaffold)
+      mkdirs.bind(scaffold, options),
+      download.bind(scaffold, options),
+      prepare.bind(scaffold, options)
     ], next);
   }
 }
 
-function mkdirs(cb) {
+function mkdirs(options, cb) {
   var scaffold = this;
   var directories = scaffold.directories;
   var tomake = Object.keys(directories);
-  if (!scaffold.config.get('task:checkout:empty')) {
+  if (!options.config.get('empty')) {
     tomake = tomake.filter(function (dirname) {
       return dirname !== 'moduledir';
     });
@@ -72,14 +72,14 @@ function mkdirs(cb) {
     mkdirp(path.resolve(directories.rootdir, directories[dir]), next);
   }, cb);
 }
-function download(cb) {
+function download(options, cb) {
   var scaffold = this;
-  if (scaffold.config.get('task:checkout:empty')) {
-    cb(null);
-    return;
-  }
-  var config = scaffold.config.get('task:checkout:repository');
+  var config = options.config.get('repository');
   if (!config) {
+    if (options.config.get('empty')) {
+      cb(null);
+      return;
+    }
     cb(new Error('Cannot checkout unknown repository'));
     return;
   }
@@ -88,10 +88,10 @@ function download(cb) {
   repository.destination = config.type !== 'tar-stream' ? scaffold.directories.moduledir : scaffold.directories.packagedir;
   checkout(repository, cb);
 }
-function prepare(cb) {
+function prepare(options, cb) {
   var scaffold = this;
   async.series([
-    scaffold.perform.bind(scaffold, 'task.checkout.scaffold', scaffold),
-    scaffold.perform.bind(scaffold, 'task.checkout.lockdown')
+    scaffold.perform.bind(scaffold, 'task.checkout.scaffold', scaffold, options),
+    scaffold.perform.bind(scaffold, 'task.checkout.lockdown', scaffold, options)
   ], cb);
 }

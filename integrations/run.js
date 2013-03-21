@@ -6,6 +6,7 @@ var path = require('path');
 exports.name = 'run';
 exports.tasks = {
   run: function (args, options, cb) {
+    console.log(arguments)
     var scaffold = this;
     var cmd = args.shift();
     var env = options.env || {};
@@ -41,6 +42,12 @@ exports.tasks = {
         env.TMP = resolveDir(scaffold.directories.tmpdir);
     }
     options.env = env;
-    scaffold.run(cmd, args, options, cb);
+    scaffold.perform('task.run.lockdown', cmd, args, options, function (err, cmd, args, options) {
+      if (err) {
+        cb(err);
+        return;
+      }
+      scaffold.run(cmd, args, options, cb);
+    });
   }
 }

@@ -1,6 +1,7 @@
 //
 // Some basic security for user / group permissions (not sufficient on Windows)
 //
+var uidNumber = require('uid-number');
 exports.name = 'security';
 exports.schema = {
   properties: {
@@ -26,16 +27,16 @@ exports.actions = {
   //
   // When locking down, change fs attributes appropriately
   //
-  'task.checkout.lockdown': function secure(scaffold, next) {
+  'task.checkout.lockdown': function secure(scaffold, options, next) {
     //
     // for consistency only
     //
-    if (scaffold.config.get('task:security:insecure')) {
-      next(null, scaffold);
+    if (options.config.get('insecure')) {
+      next(null, scaffold, options);
       return;
     }
-    var uid = scaffold.config.get('task:security:uid') || process.getuid();
-    var gid = scaffold.config.get('task:security:gid') || process.getgid();
+    var uid = options.config.get('uid') || process.getuid();
+    var gid = options.config.get('gid') || process.getgid();
     uidNumber(uid, gid, function (err, uid, gid) {
       if (err) {
         next(err);
@@ -49,34 +50,34 @@ exports.actions = {
   //
   // When programs run, run as the proper user/group
   //
-  run: function secure(cmd, args, options, next) {
-    var security = options.integrations && options.integrations.security;
-    if (!security) {
-      next(null, cmd, args, options);
-      return;
-    }
-    var insecure =  security.insecure || scaffold.config.get('task:security:insecure');
+  'task.run.lockdown': function secure(cmd, args, options, next) {
+    var insecure = options.config.get('insecure');
     if (insecure) {
       next(null, cmd, args, options);
       return;
     }
-    if (security.precomputed) {
-      options.uid = security.uid;
-      options.gid = security.gid;
-      next(null, cmd, args, options);
-      return;
-    }
     var scaffold = this;
-    var uid = security.uid || scaffold.config.get('task:security:uid');
-    var gid = security.gid || scaffold.config.get('task:security:gid');
-    uidNumber(uid, gid, function (err, uid, gid) {
+    var uid = options.config.get('uid');
+    var gid = options.config.get('gid');
+    function setids(err, uid, gid) {
       if (err) {
         next(err);
         return;
       }
-      options.uid = uid;
-      options.gid = gid;
+      if (uid) options.uid = '#'+uid;
+      if (gid) options.gid = '#'+gid;
       next(null, cmd, args, options);
-    });
+    }
+    if (uid) {
+      if (gid) {
+        uidNumber(uid, gid, setids);
+      }
+      else {
+        uidNumber(uid, setids);
+      }
+    }
+    else {
+      setids(null, void 0, void 0);
+    }
   }
 }
