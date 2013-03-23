@@ -8,6 +8,8 @@
   "main": "lib/nam.js",
   "license": "MIT",
   "dependencies": {
-    "uid-number": "0.0.3"
+    "uid-number": "0.0.3",
+    "semver": "~1.1.4",
+    "chmodr": "~0.1.0"
   }
 }

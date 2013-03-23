@@ -18,7 +18,7 @@ exports.tasks = {
     var separator = process.platform === 'win32' ? ';' : ':';
     function addStringToEnv(name, str) {
       var base = env[name] || process.env[name] || '';
-      env[name] = (base ? base + separator : '') + str;
+      env[name] = str + (base ? separator + base : '');
     }
     switch (process.platform) {
       case "win32":

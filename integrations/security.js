@@ -2,6 +2,7 @@
 // Some basic security for user / group permissions (not sufficient on Windows)
 //
 var uidNumber = require('uid-number');
+var chmodr = require('chmodr');
 exports.name = 'security';
 exports.schema = {
   properties: {
@@ -39,11 +40,11 @@ exports.actions = {
     var gid = options.config.get('group') || process.getgid();
     uidNumber(uid, gid, function (err, uid, gid) {
       if (err) {
-        next(err);
+        next(err, scaffold, options);
         return;
       }
       chmodr(scaffold.directories.rootdir, uid, gid, function (err) {
-        next(err, scaffold);
+        next(err, scaffold, options);
       });
     });
   },
@@ -61,7 +62,7 @@ exports.actions = {
     var gid = options.config.get('group');
     function setids(err, uid, gid) {
       if (err) {
-        next(err);
+        next(err, cmd, args, options);
         return;
       }
       if (uid) options.uid = '#'+uid;
